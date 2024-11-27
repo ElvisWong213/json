@@ -7,7 +7,7 @@
 
 TokenNode::TokenNode() {
     this->type = TokenType::NULL_TYPE;
-    this->value = "";
+    this->value = nullptr;
     this->next = nullptr;
 }
 
@@ -71,32 +71,28 @@ void Tokenizer::load_to_token() {
     bool isString = false;
     bool isNumber = false;
     bool isBool = false;
-    std::string buffer;
+    std::string* buffer = new std::string();
     TokenNode* newToken = new TokenNode();
 
     for (std::string::iterator it = this->data.begin(); it != this->data.end(); it++) {
         switch (*it) {
             case '{':
                 newToken->type = TokenType::CURLY_START;
-                newToken->value = '{';
                 push_token(newToken);
                 newToken = new TokenNode();
                 break;
             case '[':
                 newToken->type = TokenType::ARRAY_START;
-                newToken->value = '[';
                 push_token(newToken);
                 newToken = new TokenNode();
                 break;
             case '}':
                 newToken->type = TokenType::CURLY_END;
-                newToken->value = '}';
                 push_token(newToken);
                 newToken = new TokenNode();
                 break;
             case ']':
                 newToken->type = TokenType::ARRAY_END;
-                newToken->value = ']';
                 push_token(newToken);
                 newToken = new TokenNode();
                 break;
@@ -107,7 +103,7 @@ void Tokenizer::load_to_token() {
                     newToken->value = buffer;
                     push_token(newToken);
                     newToken = new TokenNode();
-                    buffer.clear();
+                    buffer = new std::string();
                     isString = false;
                 } else {
                     isString = true;
@@ -115,11 +111,10 @@ void Tokenizer::load_to_token() {
                 break;
             case ':':
                 if (isString) {
-                    buffer.push_back(*it);
+                    buffer->push_back(*it);
                     continue;
                 }
                 newToken->type = TokenType::COLON;
-                newToken->value = ':';
                 push_token(newToken);
                 newToken = new TokenNode();
                 break;
@@ -127,9 +122,9 @@ void Tokenizer::load_to_token() {
                 if (isNumber && isBool) {
                     throw std::runtime_error("JSON file syntax error: value cannot be number and boolean at the sametime");
                 }
-                if (!buffer.empty()) {
+                if (!buffer->empty()) {
                     if (isString) {
-                        buffer.push_back(*it);
+                        buffer->push_back(*it);
                         continue;
                     }
                     if (isNumber) {
@@ -144,10 +139,9 @@ void Tokenizer::load_to_token() {
                     newToken->value = buffer;
                     push_token(newToken);
                     newToken = new TokenNode();
-                    buffer.clear();
+                    buffer = new std::string();
                 }
                 newToken->type = TokenType::COMMA;
-                newToken->value = ',';
                 push_token(newToken);
                 newToken = new TokenNode();
                 break;
@@ -155,7 +149,7 @@ void Tokenizer::load_to_token() {
                 if (!isString && is_space(*it)) {
                     continue;
                 }
-                buffer.push_back(*it);
+                buffer->push_back(*it);
                 if (isString) {
                     continue;
                 }
@@ -171,7 +165,7 @@ void Tokenizer::load_to_token() {
         }
     }
 
-    if (isNumber || isString || isBool || !buffer.empty()) {
+    if (isNumber || isString || isBool || !buffer->empty()) {
         throw std::runtime_error("JSON file syntax error");
     }
 }

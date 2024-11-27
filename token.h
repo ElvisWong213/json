@@ -17,7 +17,7 @@ enum class TokenType {
 
 class TokenNode {
     public:
-        std::string value;
+        std::string* value;
         TokenType type;
         TokenNode* next;
         TokenNode();
