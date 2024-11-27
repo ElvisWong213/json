@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <fstream>
 #include <iostream>
-#include <ostream>
 #include <stdexcept>
 #include <string>
 
@@ -61,6 +60,13 @@ bool Tokenizer::node_is_empty() {
     return false;
 };
 
+bool Tokenizer::is_space(char c) {
+    if (c == '\n' || c == ' ' || c == '\t' || c == '\r') {
+        return true;
+    }
+    return false;
+}
+
 void Tokenizer::load_to_token() {
     bool isString = false;
     bool isNumber = false;
@@ -69,7 +75,6 @@ void Tokenizer::load_to_token() {
     TokenNode* newToken = new TokenNode();
 
     for (std::string::iterator it = this->data.begin(); it != this->data.end(); it++) {
-        std::cout << buffer << std::endl;
         switch (*it) {
             case '{':
                 newToken->type = TokenType::CURLY_START;
@@ -109,6 +114,10 @@ void Tokenizer::load_to_token() {
                 }
                 break;
             case ':':
+                if (isString) {
+                    buffer.push_back(*it);
+                    continue;
+                }
                 newToken->type = TokenType::COLON;
                 newToken->value = ':';
                 push_token(newToken);
@@ -116,10 +125,13 @@ void Tokenizer::load_to_token() {
                 break;
             case ',':
                 if (isNumber && isBool) {
-                    std::cout << buffer << std::endl;
                     throw std::runtime_error("JSON file syntax error: value cannot be number and boolean at the sametime");
                 }
                 if (!buffer.empty()) {
+                    if (isString) {
+                        buffer.push_back(*it);
+                        continue;
+                    }
                     if (isNumber) {
                         isNumber = false;
                         newToken->type = TokenType::NUMBER;
@@ -140,6 +152,9 @@ void Tokenizer::load_to_token() {
                 newToken = new TokenNode();
                 break;
             default:
+                if (!isString && is_space(*it)) {
+                    continue;
+                }
                 buffer.push_back(*it);
                 if (isString) {
                     continue;
@@ -156,7 +171,7 @@ void Tokenizer::load_to_token() {
         }
     }
 
-    if (!isNumber || !isString || !isBool || !buffer.empty()) {
+    if (isNumber || isString || isBool || !buffer.empty()) {
         throw std::runtime_error("JSON file syntax error");
     }
 }

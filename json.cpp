@@ -75,9 +75,7 @@ JSONParser::JSONParser(std::string filePath) {
     this->filePath = filePath;
     this->tokenizer = Tokenizer();
     this->tokenizer.read_file(filePath);
-    std::cout << "Start" << std::endl;
     this->tokenizer.load_to_token();
-    std::cout << "End" << std::endl;
 }
 
 JSONNode JSONParser::parse_object() {
@@ -219,7 +217,7 @@ JSONNode JSONParser::parse_null(TokenNode &node) {
 void JSONParser::parse() {
     while (!this->tokenizer.node_is_empty()) {
         TokenNode token = this->tokenizer.pop_first_token();
-        parse_value(token);
         std::cout << token.value << std::endl;
+        // parse_value(token);
     }
 }

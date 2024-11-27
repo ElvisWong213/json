@@ -27,6 +27,7 @@ class Tokenizer {
     private:
         TokenNode* head;
         std::string data;
+        bool is_space(char c);
     public:
         Tokenizer();
         void read_file(std::string filePath);

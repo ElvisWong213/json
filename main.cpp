@@ -3,7 +3,7 @@
 #include "json.h"
 
 int main() {
-    std::string filePath = "../data.json";
+    std::string filePath = "data.json";
     JSONParser parser = JSONParser(filePath);
 
     parser.parse();
