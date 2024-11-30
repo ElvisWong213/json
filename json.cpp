@@ -4,11 +4,13 @@
 #include <iostream>
 #include <map>
 #include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-JSONValue::JSONValue() {
+// JSON Value
+Value::Value() {
     this->number = 0.0;
     this->boolean = nullptr;
     this->str = nullptr;
@@ -16,67 +18,68 @@ JSONValue::JSONValue() {
     this->object = nullptr;
 }
 
-JSONNode::JSONNode() {
-    this->type = JSONType::NULL_TYPE;
+// JSON Node
+JNode::JNode() {
+    this->type = JType::NULL_TYPE;
     this->value = nullptr;
 }
 
-JSONNode::JSONNode(JSONType type, JSONValue* value) {
+JNode::JNode(JType type, Value* value) {
     this->type = type;
     this->value = value;
 }
 
-void JSONNode::update_value(JSONType type, JSONValue* value) {
+void JNode::update_value(JType type, Value* value) {
     this->type = type;
     this->value = value;
 }
 
-void JSONNode::clear() {
-    this->type = JSONType::NULL_TYPE;
+void JNode::clear() {
+    this->type = JType::NULL_TYPE;
     this->value = nullptr;
 }
 
-float JSONNode::get_number() {
-    if (this->type != JSONType::NUMBER) {
+float JNode::get_number() {
+    if (this->type != JType::NUMBER) {
         throw std::logic_error("Invalid type return");
     }
     return this->value->number;
 }
 
-bool JSONNode::get_bool() {
-    if (this->type != JSONType::BOOLEAN) {
+bool JNode::get_bool() {
+    if (this->type != JType::BOOLEAN) {
         throw std::logic_error("Invalid type return");
     }
     return this->value->boolean;
 }
 
-std::string JSONNode::get_string() {
-    if (this->type != JSONType::STRING) {
+std::string JNode::get_string() {
+    if (this->type != JType::STRING) {
         throw std::logic_error("Invalid type return");
     }
     return *this->value->str;
 }
 
-std::vector<JSONNode> JSONNode::get_list() {
-    if (this->type != JSONType::LIST) {
+std::vector<JNode> JNode::get_list() {
+    if (this->type != JType::LIST) {
         throw std::logic_error("Invalid type return");
     }
     return *this->value->list;
 }
 
-std::map<std::string, JSONNode> JSONNode::get_object() {
-    if (this->type != JSONType::OBJECT) {
+std::map<std::string, JNode> JNode::get_object() {
+    if (this->type != JType::OBJECT) {
         throw std::logic_error("Invalid type return");
     }
     return *this->value->object;
 }
 
-void JSONNode::print_value() {
+void JNode::print_value() {
     switch (this->type) {
-        case JSONType::NULL_TYPE:
+        case JType::NULL_TYPE:
                 std::cout << "Null" << std::endl;
             break;
-        case JSONType::OBJECT:
+        case JType::OBJECT:
             std::cout << '{' << std::endl;
             for (auto obj : get_object()) {
                 std::cout << obj.first << ": ";
@@ -84,20 +87,20 @@ void JSONNode::print_value() {
             }
             std::cout << "}," << std::endl;
             break;
-        case JSONType::LIST:
+        case JType::LIST:
             std::cout << '[' << std::endl;
-            for (JSONNode val : get_list()) {
+            for (JNode val : get_list()) {
                 val.print_value();
             }
             std::cout << ']' << std::endl;
             break;
-        case JSONType::STRING:
+        case JType::STRING:
             std::cout << get_string() << std::endl;
             break;
-        case JSONType::NUMBER:
+        case JType::NUMBER:
             std::cout << this->get_number() << std::endl;
             break;
-        case JSONType::BOOLEAN:
+        case JType::BOOLEAN:
             if (this->get_bool()) {
                 std::cout << "True" << std::endl;
             } else {
@@ -109,24 +112,34 @@ void JSONNode::print_value() {
     }
 }
 
-JSONParser::JSONParser(std::string filePath) {
-    this->filePath = filePath;
+// JSON Pareser
+Parser::Parser() {
     this->tokenizer = Tokenizer();
+    this->data = JNode();
+}
+
+void Parser::load_file(std::string filePath) {
     this->tokenizer.read_file(filePath);
     this->tokenizer.load_to_token();
 }
 
-JSONNode* JSONParser::parse_object() {
+void Parser::load_data(std::string input) {
+    std::stringstream data(input);
+    this->tokenizer.read_data(&data);
+    this->tokenizer.load_to_token();
+}
+
+JNode* Parser::parse_object() {
     bool finish = false;
-    JSONType type = JSONType::OBJECT;
-    std::map<std::string, JSONNode>* object = new std::map<std::string, JSONNode>();
+    JType type = JType::OBJECT;
+    std::map<std::string, JNode>* object = new std::map<std::string, JNode>();
     bool isKey = true;
 
     std::string key;
-    JSONNode* value = new JSONNode();
+    JNode* value = new JNode();
 
     while (!this->tokenizer.node_is_empty() && !finish) {
-        TokenNode tokenNode = this->tokenizer.pop_first_token();
+        Node tokenNode = this->tokenizer.pop_first_token();
         switch (tokenNode.type) {
             case TokenType::STRING:
                 if (isKey) {
@@ -159,19 +172,19 @@ JSONNode* JSONParser::parse_object() {
                 break;
         }
     }
-    JSONValue* nodeObject = new JSONValue();
+    Value* nodeObject = new Value();
     nodeObject->object = object;
-    return new JSONNode(type, nodeObject);
+    return new JNode(type, nodeObject);
 }
 
-JSONNode* JSONParser::parse_list() {
+JNode* Parser::parse_list() {
     bool finish = false;
-    JSONType type = JSONType::LIST;
-    std::vector<JSONNode>* list = new std::vector<JSONNode>();
-    JSONNode* value;
+    JType type = JType::LIST;
+    std::vector<JNode>* list = new std::vector<JNode>();
+    JNode* value;
 
     while (!this->tokenizer.node_is_empty() && !finish) {
-        TokenNode token = this->tokenizer.pop_first_token();
+        Node token = this->tokenizer.pop_first_token();
         switch (token.type) {
             case TokenType::COMMA:
                 list->push_back(*value);
@@ -187,12 +200,12 @@ JSONNode* JSONParser::parse_list() {
                 break;
         }
     }
-    JSONValue* nodeList = new JSONValue();
+    Value* nodeList = new Value();
     nodeList->list = list;
-    return new JSONNode(type, nodeList);
+    return new JNode(type, nodeList);
 }
 
-JSONNode* JSONParser::parse_value(TokenNode* node) {
+JNode* Parser::parse_value(Node* node) {
     switch (node->type) {
         case TokenType::ARRAY_START:
             return parse_list();
@@ -211,26 +224,26 @@ JSONNode* JSONParser::parse_value(TokenNode* node) {
     }
 }
 
-JSONNode* JSONParser::parse_string(TokenNode* node) {
+JNode* Parser::parse_string(Node* node) {
     if (node->type != TokenType::STRING) {
         throw std::runtime_error("Node is not string");
     }
-    JSONValue* value = new JSONValue();
+    Value* value = new Value();
     value->str = node->value;
-    return new JSONNode(JSONType::STRING, value);
+    return new JNode(JType::STRING, value);
 }
 
-JSONNode* JSONParser::parse_number(TokenNode* node) {
+JNode* Parser::parse_number(Node* node) {
     if (node->type != TokenType::NUMBER) {
         throw std::runtime_error("Node is not number");
     }
     float number = std::stof(*node->value);
-    JSONValue* value = new JSONValue();
+    Value* value = new Value();
     value->number = number;
-    return new JSONNode(JSONType::NUMBER, value);
+    return new JNode(JType::NUMBER, value);
 }
 
-JSONNode* JSONParser::parse_boolean(TokenNode* node) {
+JNode* Parser::parse_boolean(Node* node) {
     if (node->type != TokenType::BOOLEAN) {
         throw std::runtime_error("Node is not boolean");
     }
@@ -246,23 +259,26 @@ JSONNode* JSONParser::parse_boolean(TokenNode* node) {
     } else {
         throw std::runtime_error("Cannot convert node to bool");
     }
-    JSONValue* value = new JSONValue();
+    Value* value = new Value();
     value->boolean = &result;
-    return new JSONNode(JSONType::NUMBER, value);
+    return new JNode(JType::NUMBER, value);
 }
 
-JSONNode* JSONParser::parse_null(TokenNode* node) {
+JNode* Parser::parse_null(Node* node) {
     if (node->type != TokenType::NULL_TYPE) {
         throw std::runtime_error("Node is not null type");
     }
-    JSONValue* value = new JSONValue();
-    return new JSONNode(JSONType::NULL_TYPE, value);
+    Value* value = new Value();
+    return new JNode(JType::NULL_TYPE, value);
 }
 
-void JSONParser::parse() {
+void Parser::parse() {
     while (!this->tokenizer.node_is_empty()) {
-        TokenNode token = this->tokenizer.pop_first_token();
+        Node token = this->tokenizer.pop_first_token();
         this->data = *parse_value(&token);
     }
+}
+
+void Parser::print() {
     this->data.print_value();
 }

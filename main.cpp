@@ -4,9 +4,12 @@
 
 int main() {
     std::string filePath = "data.json";
-    JSONParser parser = JSONParser(filePath);
-
+    Parser parser = Parser();
+    parser.load_file(filePath);
     parser.parse();
+    parser.print();
 
+    // parser.load_data("{\"data\": \"Hi\"}");
+    // parser.parse();
     return 0;
 }

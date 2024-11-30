@@ -1,11 +1,12 @@
 #include "token.h"
 #include <cstdio>
 #include <fstream>
-#include <iostream>
+#include <istream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
-TokenNode::TokenNode() {
+Node::Node() {
     this->type = TokenType::NULL_TYPE;
     this->value = nullptr;
     this->next = nullptr;
@@ -24,28 +25,32 @@ void Tokenizer::read_file(std::string filePath) {
         throw std::runtime_error("Unable to open file");
     }
 
-    std::string line;
-    while (std::getline(myFile, line)) {
-        this->data.append(line);
-    }
+    read_data(&myFile);
 
     myFile.close();
 }
 
-void Tokenizer::push_token(TokenNode* token) {
+void Tokenizer::read_data(std::istream* data)  {
+    std::string line;
+    while (std::getline(*data, line)) {
+        this->data.append(line);
+    }
+}
+
+void Tokenizer::push_token(Node* token) {
     if (this->head == nullptr) {
         this->head = token;
         return;
     }
-    TokenNode* current = this->head;
+    Node* current = this->head;
     while (current->next != nullptr) {
         current = current->next;
     }
     current->next = token;
 }
 
-TokenNode Tokenizer::pop_first_token() {
-    TokenNode* first = this->head;
+Node Tokenizer::pop_first_token() {
+    Node* first = this->head;
     if (first == nullptr) {
         throw std::runtime_error("pointer is null");
     }
@@ -72,29 +77,29 @@ void Tokenizer::load_to_token() {
     bool isNumber = false;
     bool isBool = false;
     std::string* buffer = new std::string();
-    TokenNode* newToken = new TokenNode();
+    Node* newToken = new Node();
 
     for (std::string::iterator it = this->data.begin(); it != this->data.end(); it++) {
         switch (*it) {
             case '{':
                 newToken->type = TokenType::CURLY_START;
                 push_token(newToken);
-                newToken = new TokenNode();
+                newToken = new Node();
                 break;
             case '[':
                 newToken->type = TokenType::ARRAY_START;
                 push_token(newToken);
-                newToken = new TokenNode();
+                newToken = new Node();
                 break;
             case '}':
                 newToken->type = TokenType::CURLY_END;
                 push_token(newToken);
-                newToken = new TokenNode();
+                newToken = new Node();
                 break;
             case ']':
                 newToken->type = TokenType::ARRAY_END;
                 push_token(newToken);
-                newToken = new TokenNode();
+                newToken = new Node();
                 break;
             case '\'':
             case'\"':
@@ -102,7 +107,7 @@ void Tokenizer::load_to_token() {
                     newToken->type = TokenType::STRING;
                     newToken->value = buffer;
                     push_token(newToken);
-                    newToken = new TokenNode();
+                    newToken = new Node();
                     buffer = new std::string();
                     isString = false;
                 } else {
@@ -116,7 +121,7 @@ void Tokenizer::load_to_token() {
                 }
                 newToken->type = TokenType::COLON;
                 push_token(newToken);
-                newToken = new TokenNode();
+                newToken = new Node();
                 break;
             case ',':
                 if (isNumber && isBool) {
@@ -138,12 +143,12 @@ void Tokenizer::load_to_token() {
                     }
                     newToken->value = buffer;
                     push_token(newToken);
-                    newToken = new TokenNode();
+                    newToken = new Node();
                     buffer = new std::string();
                 }
                 newToken->type = TokenType::COMMA;
                 push_token(newToken);
-                newToken = new TokenNode();
+                newToken = new Node();
                 break;
             default:
                 if (!isString && is_space(*it)) {
