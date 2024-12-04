@@ -1,11 +1,6 @@
 #include "token.h"
-#include <cstdio>
 #include <fstream>
 #include <iostream>
-#include <istream>
-#include <ostream>
-#include <stdexcept>
-#include <string>
 
 Node::Node() {
     this->type = TokenType::NULL_TYPE;
