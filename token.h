@@ -21,6 +21,8 @@ class Node {
         TokenType type;
         Node* next;
         Node();
+        std::string to_string();
+        void print();
 };
 
 class Tokenizer {
@@ -28,12 +30,13 @@ class Tokenizer {
         Node* head;
         std::string data;
         bool is_space(char c);
+
     public:
         Tokenizer();
         void read_file(std::string filePath);
         void read_data(std::istream* data);
         void push_token(Node* token);
-        Node pop_first_token();
+        Node* pop_first_token();
         bool node_is_empty();
         void load_to_token();
 };

@@ -12,7 +12,7 @@
 // JSON Value
 Value::Value() {
     this->number = 0.0;
-    this->boolean = nullptr;
+    this->boolean = false;
     this->str = nullptr;
     this->list = nullptr;
     this->object = nullptr;
@@ -57,6 +57,9 @@ std::string JNode::get_string() {
     if (this->type != JType::STRING) {
         throw std::logic_error("Invalid type return");
     }
+    if (this->value->str == nullptr) {
+        throw std::runtime_error("String pointer is null");
+    }
     return *this->value->str;
 }
 
@@ -64,12 +67,18 @@ std::vector<JNode> JNode::get_list() {
     if (this->type != JType::LIST) {
         throw std::logic_error("Invalid type return");
     }
+    if (this->value->list == nullptr) {
+        throw std::runtime_error("List pointer is null");
+    }
     return *this->value->list;
 }
 
 std::map<std::string, JNode> JNode::get_object() {
     if (this->type != JType::OBJECT) {
         throw std::logic_error("Invalid type return");
+    }
+    if (this->value->object == nullptr) {
+        throw std::runtime_error("Object pointer is null");
     }
     return *this->value->object;
 }
@@ -81,7 +90,7 @@ void JNode::print_value() {
             break;
         case JType::OBJECT:
             std::cout << '{' << std::endl;
-            for (auto obj : get_object()) {
+            for (auto obj : this->get_object()) {
                 std::cout << obj.first << ": ";
                 obj.second.print_value();
             }
@@ -89,13 +98,13 @@ void JNode::print_value() {
             break;
         case JType::LIST:
             std::cout << '[' << std::endl;
-            for (JNode val : get_list()) {
+            for (JNode val : this->get_list()) {
                 val.print_value();
             }
             std::cout << ']' << std::endl;
             break;
         case JType::STRING:
-            std::cout << get_string() << std::endl;
+            std::cout << this->get_string() << std::endl;
             break;
         case JType::NUMBER:
             std::cout << this->get_number() << std::endl;
@@ -136,16 +145,16 @@ JNode* Parser::parse_object() {
     bool isKey = true;
 
     std::string key;
-    JNode* value = new JNode();
+    JNode* value;
 
     while (!this->tokenizer.node_is_empty() && !finish) {
-        Node tokenNode = this->tokenizer.pop_first_token();
-        switch (tokenNode.type) {
+        Node* node = this->tokenizer.pop_first_token();
+        switch (node->type) {
             case TokenType::STRING:
                 if (isKey) {
-                    key = *tokenNode.value;
+                    key = *node->value;
                 } else {
-                    value = parse_string(&tokenNode);
+                    value = parse_string(node);
                 }
                 break;
             case TokenType::COMMA:
@@ -156,13 +165,17 @@ JNode* Parser::parse_object() {
                 isKey = false;
                 break;
             case TokenType::NUMBER:
-                value = parse_number(&tokenNode);
-                break;
             case TokenType::BOOLEAN:
-                value = parse_boolean(&tokenNode);
-                break;
             case TokenType::ARRAY_START:
-                value = parse_list();
+                value = parse_value(node);
+                break;
+            case TokenType::CURLY_START:
+                if (!isKey) {
+                    value = parse_value(node);
+                } else {
+                    node->print();
+                    throw std::runtime_error("Fail to parse object");
+                }
                 break;
             case TokenType::CURLY_END:
                 object->insert({key, *value});
@@ -181,22 +194,28 @@ JNode* Parser::parse_list() {
     bool finish = false;
     JType type = JType::LIST;
     std::vector<JNode>* list = new std::vector<JNode>();
-    JNode* value;
 
     while (!this->tokenizer.node_is_empty() && !finish) {
-        Node token = this->tokenizer.pop_first_token();
-        switch (token.type) {
+        Node* node = this->tokenizer.pop_first_token();
+        switch (node->type) {
             case TokenType::COMMA:
-                list->push_back(*value);
-                value->clear();
                 break;
             case TokenType::ARRAY_END:
-                list->push_back(*value);
-                value->clear();
                 finish = true;
                 break;
+            case TokenType::COLON:
+            case TokenType::CURLY_END:
+                node->print();
+                throw std::runtime_error("Fail to parse list");
+                break;
+            case TokenType::NUMBER:
+            case TokenType::BOOLEAN:
+            case TokenType::STRING:
+            case TokenType::CURLY_START:
+            case TokenType::ARRAY_START:
+                list->push_back(*parse_value(node));
+                break;
             default:
-                value = parse_value(&token);
                 break;
         }
     }
@@ -220,6 +239,7 @@ JNode* Parser::parse_value(Node* node) {
         case TokenType::NULL_TYPE:
             return parse_null(node);
         default:
+            node->print();
             throw std::runtime_error("This node is not value type");
     }
 }
@@ -260,7 +280,7 @@ JNode* Parser::parse_boolean(Node* node) {
         throw std::runtime_error("Cannot convert node to bool");
     }
     Value* value = new Value();
-    value->boolean = &result;
+    value->boolean = result;
     return new JNode(JType::NUMBER, value);
 }
 
@@ -274,8 +294,8 @@ JNode* Parser::parse_null(Node* node) {
 
 void Parser::parse() {
     while (!this->tokenizer.node_is_empty()) {
-        Node token = this->tokenizer.pop_first_token();
-        this->data = *parse_value(&token);
+        Node* token = this->tokenizer.pop_first_token();
+        this->data = *parse_value(token);
     }
 }
 

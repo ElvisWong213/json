@@ -19,7 +19,7 @@ class JNode;
 union Value {
     public:
         float number;
-        bool* boolean;
+        bool boolean;
         std::string* str;
         std::vector<JNode>* list;
         std::map<std::string, JNode>* object;
@@ -30,6 +30,7 @@ class JNode {
     private:
         JType type;
         Value* value;
+
     public:
         JNode();
         JNode(JType type, Value* value);

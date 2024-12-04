@@ -9,7 +9,5 @@ int main() {
     parser.parse();
     parser.print();
 
-    // parser.load_data("{\"data\": \"Hi\"}");
-    // parser.parse();
     return 0;
 }
