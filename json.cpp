@@ -2,6 +2,8 @@
 #include "token.h"
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <vector>
 
 // JSON Value
 Value::Value() {
@@ -21,6 +23,14 @@ JNode::JNode() {
 JNode::JNode(JType type, Value* value) {
     this->type = type;
     this->value = value;
+}
+
+std::string JNode::space(int count) {
+    std::string output;
+    for (int i = 0; i < count; i ++) {
+        output.push_back('\t');
+    }
+    return output;
 }
 
 void JNode::update_value(JType type, Value* value) {
@@ -77,7 +87,7 @@ std::map<std::string, JNode> JNode::get_object() {
     return *this->value->object;
 }
 
-void JNode::print_value() {
+void JNode::print_value(int space) {
     switch (this->type) {
         case JType::NULL_TYPE:
                 std::cout << "Null" << std::endl;
@@ -85,29 +95,30 @@ void JNode::print_value() {
         case JType::OBJECT:
             std::cout << '{' << std::endl;
             for (auto obj : this->get_object()) {
-                std::cout << obj.first << ": ";
-                obj.second.print_value();
+                std::cout << this->space(space + 1) << obj.first << ": ";
+                obj.second.print_value(space + 1);
             }
-            std::cout << "}," << std::endl;
+            std::cout << this->space(space) << "}," << std::endl;
             break;
         case JType::LIST:
             std::cout << '[' << std::endl;
             for (JNode val : this->get_list()) {
-                val.print_value();
+                std::cout << this->space(space + 1);
+                val.print_value(space + 1);
             }
-            std::cout << ']' << std::endl;
+            std::cout << this->space(space) << ']' << std::endl;
             break;
         case JType::STRING:
-            std::cout << this->get_string() << std::endl;
+            std::cout << this->get_string() << ", " << std::endl;
             break;
         case JType::NUMBER:
-            std::cout << this->get_number() << std::endl;
+            std::cout << this->get_number() << ", " << std::endl;
             break;
         case JType::BOOLEAN:
             if (this->get_bool()) {
-                std::cout << "True" << std::endl;
+                std::cout << "True" << ", " << std::endl;
             } else {
-                std::cout << "False" << std::endl;
+                std::cout << "False" << ", " << std::endl;
             }
             break;
         default:

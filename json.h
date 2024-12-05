@@ -2,6 +2,7 @@
 
 #include "token.h"
 #include <map>
+#include <string>
 #include <vector>
 
 enum class JType {
@@ -29,6 +30,7 @@ class JNode {
     private:
         JType type;
         Value* value;
+        std::string space(int count);
 
     public:
         JNode();
@@ -40,7 +42,7 @@ class JNode {
         std::string get_string();
         std::vector<JNode> get_list();
         std::map<std::string, JNode> get_object();
-        void print_value();
+        void print_value(int space);
 };
 
 class Parser {
